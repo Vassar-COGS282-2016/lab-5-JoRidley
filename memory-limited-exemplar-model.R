@@ -2,10 +2,8 @@
 # One of the assumptions of GCM is that all of the category exemplars that you have
 # ever seen equally influence the categorization decision. This seems like an unlikely
 # claim, given what we know about human memory. 
-
 # Implement a new categorization model, based on GCM, with an additional parameter
 # for memory decay. Here's how the model should behave:
-
 # - The data frame training.data will have columns x, y, and category. A sample data
 #   frame is provided below. Run the code and open it to see what the data look like.
 # - You can assume that the training.data are presented in order. Row 1 is the first
@@ -31,10 +29,35 @@
 #   total similarity to get the predicted probability of a response for the target category.
 # - Return this probability.
 
+#this is a change
 sample.training.data <- data.frame(x=c(0.5,0.6), y=c(0.4,0.3), category=c(1,2))
 
 exemplar.memory.limited <- function(training.data, x.val, y.val, target.category, sensitivity, decay.rate){
-  return(NA)
+  expo <- (nrow(training.data)-1):0
+  
+  training.data$weight <- sapply(expo,  function(exponent){
+    return(1*decay.rate^exponent)
+  }
+  )
+  
+  distance <- mapply(function(x.val2, y.val2){
+    return(sqrt(((x.val - x.val2)^2) + ((y.val - y.val2)^2)))
+  }
+  , training.data$x, training.data$y)
+  
+  similarity <- sapply(distance, function(dis){ 
+    return(exp((-sensitivity)*distance))
+  }
+  )
+  
+  mem.weighted.sim <- (similarity * training.data$weight)
+  
+  min.prob <- 0.001
+  pred.prob <- sum(subset(train.data, category==target.category)$similarity) / sum(training.data$similarity)
+  if(pred.prob < min.prob){
+    return(min.prob)
+  }
+  return(pred.prob)
 }
 
 # Once you have the model implemented, write the log-likelihood function for a set of data.
@@ -60,5 +83,29 @@ sample.data.set[4,]
 # Don't forget that decay rate should be between 0 and 1, and that sensitivity should be > 0.
 
 exemplar.memory.log.likelihood <- function(all.data, sensitivity, decay.rate){
-  return(NA)
+  if((sensitivity <= 0) || (decay.rate < 0) || (decay.rate > 1)){
+    return(NA)
+  }
+  
+  list <- 1:nrow(all.data)
+  cat.prob <- sapply(list, function(index) {
+    if(index == 1){
+      return(0.5)
+    }
+    test.data <- all.data[index, ]
+    tr.data <- all.data[1:(index - 1), ]
+    return(exemplar.memory.limited (tr.data, test.data$x, test.data$y, test.data$category, sensitivity, decay.rate))
+  })
+  
+  subject.response.prob <- sapply(list, function(index){
+    if(test.data$correct[index] == FALSE){
+      return(1 - cat.prob[index])
+    }
+    return(cat.prob[index])
+  })
+  
+  log(subject.response.prob)
+  log.likelihood <- sum(log(subject.response.prob))
+  
+  return(-log.likelihood)
 }

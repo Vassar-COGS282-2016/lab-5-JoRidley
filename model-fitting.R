@@ -4,9 +4,17 @@ source('memory-limited-exemplar-model.R')
 rm(sample.data.set)
 rm(sample.training.data)
 
+## little wrapper function
+exemplar.memory.min <- function(pram){
+  return(exemplar.memory.log.likelihood(all.data, pram[1], pram[2]))
+}
+
 # Use optim() to fit the model to this data.
 # Note: In optim() you can tell it to display updates as it goes with:
 # optim( ... , control=list(trace=4))
+
+m <- optim(c(1, 1), exemplar.memory.min, control = list(trace=4), method = "Nelder-Mead")
+
 
 # Now try fitting a restricted version of the model, where we assume there is no decay.
 # Fix the decay.rate parameter to 1, and use optim to fit the sensitivity parameter.
@@ -14,10 +22,27 @@ rm(sample.training.data)
 # The brent method also requires an upper and lower boundary:
 # optim( ..., upper=100, lower=0, method="Brent")
 
+exemplar.decay.set <- function(pram){
+  return(exemplar.memory.log.likelihood(all.data, parm[1], 1))
+}
+
+optim(c(1), exemplar.decay.set(), upper=100, lower=0, method="Brent")
+
 # What's the log likelihood of both models? (see the $value in the result of optiom(),
 # remember this is the negative log likeihood, so multiply by -1.
 
+
+
 # What's the AIC and BIC for both models? Which model should we prefer?
+
+AIC1 <- (2 * 2) - ((2 * (log.likelihood)))
+AIC2 <- (2 * 1) - ((2 * (log.likelihood)))
+
+
+BIC1 <- (2 * log(1)) - (2 * (log.likelihood))
+BIC1 <- (1 * log(1)) - (2 * (log.likelihood))
+
+
 
 #### BONUS...
 # If you complete this part I'll refund you a late day. You do not need to do this.
@@ -34,4 +59,3 @@ rm(sample.training.data)
 # Repeat many times to get a distribution of decay.rate values.
 # Usually you would then summarize with a 95% CI, but for our purposes you can just plot a
 # histogram of the distribution.
-
